@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HYROX Planner — Build & Run Your Session</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b22; --muted:#8a93a1; --text:#e9edf2; --accent:#5dd6a4;
+    --accent-2:#7ab7ff; --danger:#ff6b6b; --ok:#62d26f; --warn:#ffb86c; --border:#262b35;
+  }
+  [data-theme="light"]{
+    --bg:#f7f9fc; --panel:#ffffff; --muted:#515a6a; --text:#0e1420; --accent:#1f9d69;
+    --accent-2:#2b73d2; --danger:#d64545; --ok:#1c8c58; --warn:#b36b06; --border:#e6eaf0;
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1200px;margin:auto;padding:20px;display:grid;gap:16px;grid-template-columns: 340px 1fr;}
+  header{grid-column:1/-1;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  .brand{display:flex;gap:12px;align-items:center}
+  .brand div{font-weight:700;font-size:20px;letter-spacing:.3px}
+  .brand .tag{font-size:12px;color:var(--muted)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  button,select,.inp{
+    background:#0000;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;
+    font:inherit
+  }
+  button:hover{border-color:var(--accent);}
+  .ghost{opacity:.7}
+  .accent{background:var(--accent);color:#08130e;border-color:var(--accent)}
+  .accent:hover{filter:brightness(1.05)}
+  .danger{background:var(--danger);color:#220b0b;border-color:var(--danger)}
+  .grid{display:grid;gap:10px}
+  .two{grid-template-columns:1fr 1fr}
+  .three{grid-template-columns:1fr 1fr 1fr}
+  .list{display:grid;gap:10px}
+  .station{border:1px dashed var(--border);border-radius:12px;padding:10px;display:grid;gap:8px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .row .grow{flex:1}
+  .chip{font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
+  .title{font-weight:700}
+  .muted{color:var(--muted)}
+  .right{margin-left:auto}
+  .hr{height:1px;background:var(--border);margin:8px 0}
+  .flex{display:flex;gap:8px;align-items:center}
+  .space{justify-content:space-between}
+  .small{font-size:12px}
+  .b{font-weight:600}
+  .progress{height:10px;background:var(--border);border-radius:999px;overflow:hidden}
+  .bar{height:100%;background:var(--accent-2);width:0%}
+  .timer-face{font-size:44px;font-weight:800;letter-spacing:1px}
+  .center{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;text-align:center}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--border);padding:2px 6px;border-radius:6px}
+  .link{color:var(--accent-2);text-decoration:none;border-bottom:1px dotted var(--accent-2)}
+  .note{width:100%}
+  .reorder{display:flex;gap:6px}
+  .badge{background:var(--border);border-radius:8px;padding:6px 8px;font-size:12px}
+  .footer{grid-column:1/-1;color:var(--muted);text-align:center;padding:10px}
+  @media (max-width: 980px){ .wrap{grid-template-columns:1fr} }
+</style>
+</head>
+<body data-theme="dark">
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M5 14h6l3-7h5" stroke="var(--accent-2)" stroke-width="2" fill="none"/>
+        </svg>
+        <div>
+          HYROX Planner
+          <div class="tag">Design • Run • Track</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button id="themeBtn" title="Toggle theme">🌓 Theme</button>
+        <button id="newBtn" class="ghost">➕ New</button>
+        <button id="saveBtn" class="accent">💾 Save</button>
+        <button id="exportBtn">⬇️ Export</button>
+        <label class="btn"><input id="importFile" type="file" accept="application/json" hidden>⬆️ Import</label>
+        <button id="printBtn">🖨️ Print/PDF</button>
+      </div>
+    </header>
+
+    <!-- LEFT: Library & Templates -->
+    <section class="panel">
+      <div class="title">Blocks Library</div>
+      <div class="small muted">Click to add to your session</div>
+      <div class="hr"></div>
+
+      <div class="grid">
+        <div class="badge b">HYROX Core</div>
+        <div class="grid two">
+          <button class="addBlock" data-type="Run" data-dist="1 km">🏃 1 km Run</button>
+          <button class="addBlock" data-type="SkiErg" data-dist="1000 m">⛷️ SkiErg 1k</button>
+          <button class="addBlock" data-type="Sled Push" data-dist="50 m" data-load="Pro: 152 kg · Open: 102 kg">🛷 Sled Push</button>
+          <button class="addBlock" data-type="Sled Pull" data-dist="50 m" data-load="Pro: 103 kg · Open: 78 kg">🪢 Sled Pull</button>
+          <button class="addBlock" data-type="Burpee Broad Jumps" data-dist="80 m">🤸 Burpee Broad Jumps</button>
+          <button class="addBlock" data-type="Row" data-dist="1000 m">🚣 Row 1k</button>
+          <button class="addBlock" data-type="Farmers Carry" data-dist="200 m" data-load="2×24 kg (Pro) · 2×16 kg (Open)">🧳 Farmers Carry</button>
+          <button class="addBlock" data-type="Sandbag Lunges" data-dist="100 m" data-load="30 kg (Pro) · 20 kg (Open)">🪨 Sandbag Lunges</button>
+          <button class="addBlock" data-type="Wall Balls" data-reps="100" data-load="9 kg (M) / 6 kg (F)">🏐 Wall Balls</button>
+        </div>
+
+        <div class="badge b">Accessory</div>
+        <div class="grid two">
+          <button class="addBlock" data-type="Strength" data-reps="5×5" data-note="Deadlift/Back Squat/Bench">🏋️ Strength 5×5</button>
+          <button class="addBlock" data-type="Mobility" data-time="10 min" data-note="Hips/Ankles/Thoracic">🧘 Mobility</button>
+          <button class="addBlock" data-type="Core" data-reps="3×12" data-note="Hollow → Side Plank">🧩 Core Set</button>
+          <button class="addBlock" data-type="Rest" data-time="2 min">⏸️ Rest 2′</button>
+        </div>
+
+        <div class="badge b">Templates</div>
+        <div class="grid">
+          <button id="tpl-open" class="accent">📄 HYROX Race Sim – Open</button>
+          <button id="tpl-pro">📄 HYROX Race Sim – Pro</button>
+          <button id="tpl-doubles">📄 HYROX Race Sim – Doubles (share work)</button>
+          <button id="tpl-engine">📄 45′ Engine Builder</button>
+          <button id="tpl-strength">📄 Strength Focus + Skill</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Session Builder + Timer -->
+    <section class="panel">
+      <div class="row space">
+        <div>
+          <div class="title">Your Session</div>
+          <div class="small muted">Edit loads/distances/reps. Reorder with arrows.</div>
+        </div>
+        <div class="row">
+          <input id="sessionName" class="inp" placeholder="Session name e.g., Mosque Evening Engine" />
+          <button id="clearBtn" class="danger">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <div id="sessionList" class="list" aria-live="polite"></div>
+
+      <div class="hr"></div>
+
+      <div class="grid two">
+        <div class="panel" style="padding:12px">
+          <div class="title">Timer</div>
+          <div class="small muted">Choose a mode and hit Start</div>
+          <div class="grid">
+            <div class="row">
+              <select id="timerMode">
+                <option value="fortime">For Time (cap)</option>
+                <option value="emom">EMOM</option>
+                <option value="amrap">AMRAP</option>
+              </select>
+              <input id="timerInputA" class="inp" placeholder="Cap / Minutes" style="width:130px">
+              <input id="timerInputB" class="inp" placeholder="EMOM: rounds (optional)" style="width:180px">
+              <button id="startTimer" class="accent">▶ Start</button>
+              <button id="stopTimer">⏹ Stop</button>
+              <button id="beepBtn">🔊 Test</button>
+            </div>
+            <div class="center">
+              <div id="timerFace" class="timer-face">00:00</div>
+              <div class="progress" style="width:100%"><div id="timerBar" class="bar"></div></div>
+              <div id="timerHint" class="small muted">Ready.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="padding:12px">
+          <div class="title">Notes & Cues</div>
+          <textarea id="notes" class="inp note" rows="8" placeholder="Warm-up, pacing (e.g., 1km runs @ 10k pace), transitions, sled strategy, etc."></textarea>
+          <div class="row small muted"><span class="right">Tip: use <span class="kbd">Ctrl/Cmd+P</span> to print or save PDF.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer small">
+      Built for self-directed HYROX prep. All data stays in your browser.
+    </div>
+  </div>
+
+<script>
+/* ---------- Utilities ---------- */
+const $ = s => document.querySelector(s);
+const el = (tag, attrs={}, children=[])=>{
+  const n = document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='class') n.className=v;
+    else if(k==='html') n.innerHTML=v;
+    else n.setAttribute(k,v);
+  });
+  (Array.isArray(children)?children:[children]).filter(Boolean).forEach(c=>{
+    if(typeof c==='string') n.appendChild(document.createTextNode(c)); else n.appendChild(c);
+  });
+  return n;
+};
+const fmt = n => String(n).padStart(2,'0');
+const beep = (hz=880, ms=180)=>{
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=hz; o.start();
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+ms/1000);
+    setTimeout(()=>{o.stop();ctx.close()}, ms+40);
+  }catch(e){}
+};
+const storageKey = "hyrox_planner_v1";
+
+/* ---------- State ---------- */
+let session = { name:"", notes:"", blocks:[] };
+let timer = { mode:"fortime", a:0, b:0, running:false, startedAt:0, target:0, emomNext:0, emomRound:0 };
+
+/* ---------- Blocks ---------- */
+function addBlock(b){
+  session.blocks.push({
+    id:crypto.randomUUID(),
+    type:b.type||"Custom",
+    dist:b.dist||"",
+    reps:b.reps||"",
+    load:b.load||"",
+    time:b.time||"",
+    note:b.note||""
+  });
+  render();
+}
+
+function blockView(item, idx){
+  const head = el('div',{class:'row space'},
+    [el('div',{class:'row'},[
+      el('span',{class:'chip'}, item.type),
+      item.dist?el('span',{class:'chip'}, item.dist):null,
+      item.reps?el('span',{class:'chip'}, item.reps):null,
+      item.load?el('span',{class:'chip'}, item.load):null,
+      item.time?el('span',{class:'chip'}, item.time):null
+    ]),
+    el('div',{class:'reorder'},[
+      btn('↑', ()=>move(idx,-1)),
+      btn('↓', ()=>move(idx,+1)),
+      btn('✎', ()=>editBlock(item.id)),
+      btn('🗑️', ()=>del(idx), 'danger')
+    ])
+  );
+
+  const notes = el('div',{class:'small muted'}, item.note?("Note: "+item.note):"");
+  return el('div',{class:'station'},[head, notes]);
+}
+
+function btn(label, fn, cls){ const b=el('button',{class:cls||''},label); b.onclick=fn; return b; }
+function move(i,dir){
+  const j = i+dir; if(j<0||j>=session.blocks.length) return;
+  [session.blocks[i],session.blocks[j]]=[session.blocks[j],session.blocks[i]];
+  render();
+}
+function del(i){ session.blocks.splice(i,1); render(); }
+
+function editBlock(id){
+  const b = session.blocks.find(x=>x.id===id); if(!b) return;
+  const dist = prompt("Distance (e.g., 1 km, 50 m):", b.dist);
+  if(dist===null) return;
+  const reps = prompt("Reps (e.g., 100, 5×5):", b.reps);
+  if(reps===null) return;
+  const load = prompt("Load (e.g., 2×24 kg):", b.load);
+  if(load===null) return;
+  const time = prompt("Target time (optional, e.g., 6 min):", b.time);
+  if(time===null) return;
+  const note = prompt("Notes/cues:", b.note);
+  if(note===null) return;
+  Object.assign(b,{dist,reps,load,time,note});
+  render();
+}
+
+/* ---------- Render ---------- */
+function render(){
+  $('#sessionName').value = session.name||"";
+  $('#notes').value = session.notes||"";
+  const list = $('#sessionList'); list.innerHTML="";
+  if(!session.blocks.length){
+    list.appendChild(el('div',{class:'center muted',style:"padding:30px 10px"},
+      [el('div',{class:'title'},'No blocks yet'),
+       el('div',{class:'small'},'Add items from the left to build your session.')]));
+  }else{
+    session.blocks.forEach((b,i)=> list.appendChild(blockView(b,i)));
+  }
+  localStorage.setItem(storageKey, JSON.stringify(session));
+}
+
+/* ---------- Timer ---------- */
+let tickHandle=null;
+function parseMinutes(s){
+  if(!s) return 0;
+  s = s.trim().toLowerCase();
+  if(/:/.test(s)){ const [m,sec]=s.split(':').map(Number); return (m||0)+((sec||0)/60); }
+  const m = parseFloat(s);
+  return isNaN(m)?0:m;
+}
+
+function startTimer(){
+  timer.mode = $('#timerMode').value;
+  timer.a = parseMinutes($('#timerInputA').value||"");
+  timer.b = parseInt($('#timerInputB').value||"0",10)||0;
+  const now = Date.now();
+  const totalMs = timer.mode==='fortime' ? Math.round(timer.a*60*1000)
+                 : timer.mode==='amrap'  ? Math.round(timer.a*60*1000)
+                 : /* emom */ Math.round((timer.a||20)*60*1000);
+  timer.startedAt = now;
+  timer.target = now + totalMs;
+  timer.running = true;
+  timer.emomNext = now + 60*1000;
+  timer.emomRound = 1;
+
+  $('#timerHint').textContent = hintText();
+  clearInterval(tickHandle);
+  tickHandle = setInterval(tick, 200);
+  beep(880,180);
+}
+function stopTimer(){
+  timer.running=false;
+  clearInterval(tickHandle);
+  $('#timerFace').textContent="00:00";
+  $('#timerBar').style.width="0%";
+  $('#timerHint').textContent="Ready.";
+}
+function hintText(){
+  if(timer.mode==='fortime') return "For Time — cap "+($('#timerInputA').value||'');
+  if(timer.mode==='amrap') return "AMRAP for "+($('#timerInputA').value||'')+" minutes";
+  return "EMOM for "+($('#timerInputA').value||'')+" minutes"+(timer.b?` • target ${timer.b} rounds`:"");
+}
+function tick(){
+  if(!timer.running) return;
+  const now = Date.now();
+  // Mode-specific beeps
+  if(timer.mode==='emom' && now >= timer.emomNext){
+    beep(1200,140); beep(900,120);
+    timer.emomNext += 60*1000;
+    timer.emomRound++;
+    $('#timerHint').textContent = `EMOM — Round ${timer.emomRound}`;
+    if(timer.b && timer.emomRound>timer.b){ // stop if rounds target reached
+      stopTimer(); return;
+    }
+  }
+  const remain = Math.max(0, timer.target - now);
+  const secs = Math.floor(remain/1000);
+  const m = Math.floor(secs/60), s = secs%60;
+  $('#timerFace').textContent = `${fmt(m)}:${fmt(s)}`;
+  const total = (timer.target - timer.startedAt);
+  const pct = total? (100 * (1 - (remain/total))) : 0;
+  $('#timerBar').style.width = pct.toFixed(2)+'%';
+  if(remain<=0){
+    beep(1400,240); setTimeout(()=>beep(900,220),260);
+    stopTimer();
+  }
+}
+
+/* ---------- Persistence & IO ---------- */
+function save(){
+  session.name = $('#sessionName').value.trim();
+  session.notes = $('#notes').value.trim();
+  localStorage.setItem(storageKey, JSON.stringify(session));
+  flash('Saved to your device.');
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(storageKey);
+    if(raw){ session = JSON.parse(raw); }
+  }catch(e){}
+  render();
+}
+function clearSession(){
+  if(!confirm("Clear current session?")) return;
+  session = { name:"", notes:"", blocks:[] };
+  render();
+}
+function exportJSON(){
+  save();
+  const blob = new Blob([JSON.stringify(session,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = el('a',{href:url,download:(session.name||'hyrox-session')+'.json'});
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 500);
+}
+function importJSON(file){
+  const fr = new FileReader();
+  fr.onload = () => { try{
+      session = JSON.parse(fr.result); render(); flash('Imported.');
+    }catch(e){ alert("Invalid file."); } };
+  fr.readAsText(file);
+}
+
+/* ---------- Templates ---------- */
+function addRun(){ addBlock({type:'Run', dist:'1 km', note:'Steady, nasal breathing; settle early.'}); }
+function hyroxStations(loads){
+  return [
+    {type:'SkiErg', dist:'1000 m', note:'Rate 24–28; smooth strokes.'},
+    {type:'Sled Push', dist:'50 m', load:loads.push, note:'Short steps, braced core.'},
+    {type:'Sled Pull', dist:'50 m', load:loads.pull, note:'Lean back, hand-over-hand.'},
+    {type:'Burpee Broad Jumps', dist:'80 m', note:'Pace: step-in, consistent jumps.'},
+    {type:'Row', dist:'1000 m', note:'Rate 24–26; don’t sprint start.'},
+    {type:'Farmers Carry', dist:'200 m', load:loads.carry, note:'Quick shakes, tall posture.'},
+    {type:'Sandbag Lunges', dist:'100 m', load:loads.lunge, note:'Knee kiss floor, upright torso.'},
+    {type:'Wall Balls', reps:'100', load:loads.wall, note:'Sets of 10–20; breathe.'},
+  ];
+}
+function tplOpen(){
+  session = {name:'HYROX Race Sim — Open', notes:'Target even pacing; cap 70–90′ depending on level.', blocks:[]};
+  for(let i=0;i<8;i++){ addRun(); addBlock(hyroxStations({
+    push:'102 kg', pull:'78 kg', carry:'2×16 kg', lunge:'20 kg', wall:'6 kg'
+  })[i]); }
+}
+function tplPro(){
+  session = {name:'HYROX Race Sim — Pro', notes:'Stronger loads; keep transitions tidy.', blocks:[]};
+  for(let i=0;i<8;i++){ addRun(); addBlock(hyroxStations({
+    push:'152 kg', pull:'103 kg', carry:'2×24 kg', lunge:'30 kg', wall:'9 kg'
+  })[i]); }
+}
+function tplDoubles(){
+  session = {name:'HYROX Race Sim — Doubles (share work)', notes:'Share stations; run together. Switch ~every 200–400 m / 10–20 reps.', blocks:[]};
+  for(let i=0;i<8;i++){ addRun(); addBlock(hyroxStations({
+    push:'Open loads (share)', pull:'Open loads (share)', carry:'Open (share)', lunge:'Open (share)', wall:'6 kg'
+  })[i]); }
+}
+function tplEngine(){
+  session = {name:'45′ Engine Builder', notes:'Zone 3 engine + light station skills.', blocks:[
+    {type:'Warm-up', time:'10 min', note:'Easy bike/row + mobility'},
+    {type:'EMOM', time:'20 min', note:'1) 10/8 cal Ski • 2) 10 KB swings • 3) 200 m run • 4) 6 burpees'},
+    {type:'Cool-down', time:'10 min', note:'Walk + mobility'}
+  ]};
+  render();
+}
+function tplStrength(){
+  session = {name:'Strength Focus + Skill', notes:'Strength before skill; full recoveries.', blocks:[
+    {type:'Strength', reps:'5×3', note:'Back Squat @ 80–85%'},
+    {type:'Strength', reps:'4×5', note:'Bench Press @ 75%'},
+    {type:'Skill', time:'12 min', note:'Wall ball tech + burpee efficiency'},
+    {type:'Core', reps:'3×12', note:'Hollow → Side Plank'}
+  ]};
+  render();
+}
+
+/* ---------- UX ---------- */
+function flash(msg){
+  const n = el('div',{class:'badge',style:"position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--accent);color:#08130e;box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:5"}, msg);
+  document.body.appendChild(n); setTimeout(()=>n.remove(), 1500);
+}
+
+$('#themeBtn').onclick=()=>{ const r=document.body; r.dataset.theme = r.dataset.theme==='light'?'dark':'light'; };
+$('#newBtn').onclick=()=>{ session={name:'',notes:'',blocks:[]}; render(); };
+$('#clearBtn').onclick=clearSession;
+$('#saveBtn').onclick=save;
+$('#exportBtn').onclick=exportJSON;
+$('#printBtn').onclick=()=>window.print();
+$('#importFile').onchange=(e)=>{ if(e.target.files?.[0]) importJSON(e.target.files[0]) };
+$('#tpl-open').onclick=tplOpen;
+$('#tpl-pro').onclick=tplPro;
+$('#tpl-doubles').onclick=tplDoubles;
+$('#tpl-engine').onclick=tplEngine;
+$('#tpl-strength').onclick=tplStrength;
+$('#timerMode').onchange=()=>{ $('#timerHint').textContent = hintText(); };
+$('#startTimer').onclick=startTimer;
+$('#stopTimer').onclick=stopTimer;
+$('#beepBtn').onclick=()=>beep();
+
+document.querySelectorAll('.addBlock').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    addBlock({
+      type:btn.dataset.type, dist:btn.dataset.dist||"", reps:btn.dataset.reps||"",
+      load:btn.dataset.load||"", time:btn.dataset.time||"", note:btn.dataset.note||""
+    });
+  });
+});
+
+$('#sessionName').oninput = ()=>{ session.name = $('#sessionName').value; localStorage.setItem(storageKey, JSON.stringify(session)); };
+$('#notes').oninput = ()=>{ session.notes = $('#notes').value; localStorage.setItem(storageKey, JSON.stringify(session)); };
+
+load();
+</script>
+</body>
+</html>
